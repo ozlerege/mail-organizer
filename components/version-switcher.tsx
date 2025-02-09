@@ -1,14 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Check, UserRoundIcon } from "lucide-react";
+import { UserRoundIcon } from "lucide-react";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
