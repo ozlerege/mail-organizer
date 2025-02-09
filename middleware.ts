@@ -10,6 +10,9 @@ const publicPaths = [
   "/api/auth/signup",
 ];
 
+// Add paths that require authentication
+const protectedPaths = ["/dashboard"];
+
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
@@ -25,26 +28,38 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionToken = request.cookies.get("session")?.value;
+  // Check authentication for protected paths
+  if (protectedPaths.some((p) => path.startsWith(p))) {
+    const sessionToken = request.cookies.get("session")?.value;
 
-  if (!sessionToken) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("from", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    if (!sessionToken) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("from", request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    try {
+      // Verify JWT
+      verify(sessionToken, process.env.JWT_SECRET as string);
+      return NextResponse.next();
+    } catch (error) {
+      // If token is invalid, clear the cookie and redirect to login
+      const response = NextResponse.redirect(new URL("/login", request.url));
+      response.cookies.delete("session");
+      return response;
+    }
   }
 
-  try {
-    // Verify JWT
-    verify(sessionToken, process.env.JWT_SECRET as string);
-    return NextResponse.next();
-  } catch (error) {
-    // If token is invalid, clear the cookie and redirect to login
-    const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.delete("session");
-    return response;
-  }
+  // Allow access to other routes
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    // Protect dashboard routes
+    "/dashboard/:path*",
+    // Protect auth pages from authenticated users
+    "/login",
+    "/signup",
+  ],
 };
