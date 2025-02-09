@@ -15,57 +15,41 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, MailIcon } from "lucide-react";
 
-// This is sample data.
-const data = {
-  versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
-  navMain: [
-    {
-      title: "Getting Started",
-      url: "#",
-      items: [
-        {
-          title: "Installation",
-          url: "#",
-        },
-        {
-          title: "Project Structure",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Building Your Application",
-      url: "#",
-      items: [
-        {
-          title: "Routing",
-          url: "#",
-        },
-        {
-          title: "Data Fetching",
-          url: "#",
-          isActive: true,
-        },
-        {
-          title: "Rendering",
-          url: "#",
-        },
-        {
-          title: "Caching",
-          url: "#",
-        },
-        {
-          title: "Styling",
-          url: "#",
-        },
-      ],
-    },
-  ],
-};
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  activeSection?: string;
+  onSectionChange?: (section: string) => void;
+}
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+const sidebarItems = [
+  {
+    title: "Mail Sections",
+    items: [
+      {
+        title: "All Mails",
+        icon: <MailIcon className="mr-2 h-4 w-4" />,
+        section: "all-mails",
+      },
+      {
+        title: "First 2 Mails",
+        icon: <MailIcon className="mr-2 h-4 w-4" />,
+        section: "first-2-mails",
+      },
+      {
+        title: "Last 2 Mails",
+        icon: <MailIcon className="mr-2 h-4 w-4" />,
+        section: "last-2-mails",
+      },
+    ],
+  },
+];
+
+export function AppSidebar({
+  activeSection,
+  onSectionChange,
+  ...props
+}: AppSidebarProps) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -73,16 +57,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SearchForm />
       </SidebarHeader>
       <SidebarContent>
-        {/* We create a SidebarGroup for each parent. */}
-        {data.navMain.map((item) => (
-          <SidebarGroup key={item.title}>
-            <SidebarGroupLabel>{item.title}</SidebarGroupLabel>
+        {sidebarItems.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {item.items.map((item) => (
+                {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
-                      <a href={item.url}>{item.title}</a>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={activeSection === item.section}
+                    >
+                      <button
+                        className="flex w-full items-center px-2 py-1"
+                        onClick={() => onSectionChange?.(item.section)}
+                      >
+                        {item.icon}
+                        {item.title}
+                      </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

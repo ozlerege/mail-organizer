@@ -2,9 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MailList } from "@/components/mail-list";
 import { Search } from "lucide-react";
 import {
@@ -13,25 +11,16 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ReplyArea } from "@/components/reply-area";
-import { useState } from "react";
+import { useState, useCallback, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Mail } from "@/types/mail";
 
-interface Mail {
-  id: string;
-  name: string;
-  subject: string;
-  text: string;
-  date: Date;
-  read: boolean;
-  labels: string[];
-  email?: string;
-}
-
-const sampleEmails = [
+const sampleEmails: Mail[] = [
   {
     id: "1",
     name: "William Smith",
@@ -40,6 +29,7 @@ const sampleEmails = [
     date: new Date("2024-02-09T09:00:00"),
     read: false,
     labels: ["meeting", "work", "important"],
+    email: "william.smith@example.com",
   },
   {
     id: "2",
@@ -49,6 +39,7 @@ const sampleEmails = [
     date: new Date("2024-02-08T15:30:00"),
     read: true,
     labels: ["work", "important"],
+    email: "alice.smith@example.com",
   },
   {
     id: "3",
@@ -58,44 +49,57 @@ const sampleEmails = [
     date: new Date("2024-02-08T11:00:00"),
     read: true,
     labels: ["personal"],
-  },
-  {
-    id: "4",
-    name: "Bob Johnson",
-    subject: "Weekend Plans",
-    text: "Any plans for the weekend? I was thinking of going hiking in the nearby mountains. It's been a while since we had some outdoor fun. If you're interested, let me know and we can plan something.",
-    date: new Date("2024-02-08T11:00:00"),
-    read: true,
-    labels: ["personal"],
-  },
-  {
-    id: "5",
-    name: "Bob Johnson",
-    subject: "Weekend Plans",
-    text: "Any plans for the weekend? I was thinking of going hiking in the nearby mountains. It's been a while since we had some outdoor fun. If you're interested, let me know and we can plan something.",
-    date: new Date("2024-02-08T11:00:00"),
-    read: true,
-    labels: ["personal"],
-  },
-  {
-    id: "6",
-    name: "Bob Johnson",
-    subject: "Weekend Plans",
-    text: "Any plans for the weekend? I was thinking of going hiking in the nearby mountains. It's been a while since we had some outdoor fun. If you're interested, let me know and we can plan something.",
-    date: new Date("2024-02-08T11:00:00"),
-    read: true,
-    labels: ["personal"],
+    email: "bob.johnson@example.com",
   },
 ];
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedEmail, setSelectedEmail] = useState<Mail | null>(null);
+  const [activeSection, setActiveSection] = useState(
+    searchParams.get("section") || "all-mails"
+  );
   const defaultLayout = [20, 30, 50];
+
+  const handleSectionChange = useCallback(
+    (section: string) => {
+      setActiveSection(section);
+      setSelectedEmail(null);
+      router.push(`/dashboard?section=${section}`);
+    },
+    [router]
+  );
+
+  const handleEmailClick = useCallback((email: Mail) => {
+    setSelectedEmail(email);
+  }, []);
+
+  const filteredEmails = useMemo(() => {
+    switch (activeSection) {
+      case "first-2-mails":
+        return sampleEmails.slice(0, 2);
+      case "last-2-mails":
+        return sampleEmails.slice(-2);
+      default:
+        return sampleEmails;
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (section) {
+      setActiveSection(section);
+    }
+  }, [searchParams]);
 
   return (
     <SidebarProvider>
       <div className="grid h-screen grid-cols-[auto_1fr]">
-        <AppSidebar />
+        <AppSidebar
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
+        />
         <SidebarInset>
           <ResizablePanelGroup
             direction="horizontal"
@@ -116,8 +120,8 @@ export default function DashboardPage() {
                 </header>
                 <div className="flex-1 overflow-hidden">
                   <MailList
-                    items={sampleEmails}
-                    onEmailClick={(email) => setSelectedEmail(email)}
+                    items={filteredEmails}
+                    onEmailClick={handleEmailClick}
                   />
                 </div>
               </div>
@@ -138,5 +142,13 @@ export default function DashboardPage() {
         </SidebarInset>
       </div>
     </SidebarProvider>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

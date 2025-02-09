@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
+
+interface LoginError {
+  message: string;
+  field?: string;
+}
 
 export function LoginForm({
   className,
@@ -16,11 +22,12 @@ export function LoginForm({
     username: "",
     password: "",
   });
-  const [error, setError] = useState<string[]>([]);
+  const [errors, setErrors] = useState<LoginError[]>([]);
   const [loading, setLoading] = useState(false);
+
   const handleLogin = async () => {
     setLoading(true);
-    setError([]);
+    setErrors([]);
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -31,9 +38,8 @@ export function LoginForm({
       });
 
       const loginData = await response.json();
-      if (response.status == 200) {
+      if (response.status === 200) {
         try {
-          // Store user data in localStorage
           localStorage.setItem(
             "user",
             JSON.stringify({
@@ -41,17 +47,23 @@ export function LoginForm({
               username: loginData.user.username,
             })
           );
-          // Redirect to dashboard after successful login
           router.push("/dashboard");
         } catch (storageError) {
           console.error("Error storing session data:", storageError);
-          setError(["Failed to store session data"]);
+          setErrors([{ message: "Failed to store session data" }]);
         }
       } else {
-        setError([loginData.error || "Something went wrong"]);
+        setErrors([{ message: loginData.error || "Something went wrong" }]);
       }
     } catch (error) {
-      setError(["An unexpected error occurred"]);
+      console.error("Login error:", error);
+      setErrors([
+        {
+          message: `An unexpected error occurred: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -85,15 +97,7 @@ export function LoginForm({
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm underline-offset-2 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -113,7 +117,13 @@ export function LoginForm({
               >
                 {loading ? "Logging in..." : "Login"}
               </Button>
-
+              {errors.length > 0 && (
+                <div className="text-sm text-red-500">
+                  {errors.map((err, index) => (
+                    <p key={index}>{err.message}</p>
+                  ))}
+                </div>
+              )}
               <div className="text-center text-sm">
                 Don&apos;t have an account?{" "}
                 <a
@@ -129,12 +139,14 @@ export function LoginForm({
             </div>
           </form>
           <div className="relative hidden bg-muted md:block">
-            <img
+            <Image
               src="/auth-background.png"
               alt="Mail Organizer"
-              className="absolute inset-0 h-full w-full object-cover"
+              fill
+              className="object-cover"
+              priority
             />
-            <div className="absolute inset-0  from-background to-background/60" />
+            <div className="absolute inset-0 from-background to-background/60" />
           </div>
         </CardContent>
       </Card>

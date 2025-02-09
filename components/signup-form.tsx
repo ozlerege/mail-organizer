@@ -7,6 +7,13 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Image from "next/image";
+
+interface SignupError {
+  message: string;
+  field?: string;
+}
+
 export function SignupForm({
   className,
   ...props
@@ -17,13 +24,13 @@ export function SignupForm({
     username: "",
     password: "",
   });
-  const [error, setError] = useState<string[]>([]);
+  const [errors, setErrors] = useState<SignupError[]>([]);
+
   const handleSignup = async () => {
     setLoading(true);
-    setError([]);
+    setErrors([]);
     try {
-      // First, create the user account
-      const signupResponse = await fetch("/api/auth/signup", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -31,25 +38,25 @@ export function SignupForm({
         body: JSON.stringify(signupInput),
       });
 
-      const signupData = await signupResponse.json();
-      if (signupResponse.ok) {
-        const loginResponse = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(signupInput),
-        });
+      const signupResponse = await response.json();
+      if (response.status === 200) {
+        router.push("/login");
       } else {
-        if (signupData.error === "Validation error" && signupData.details) {
-          setError(signupData.details.map((detail: any) => detail.message));
-        } else {
-          setError([signupData.error || "Something went wrong"]);
-        }
+        setErrors(
+          Array.isArray(signupResponse.error)
+            ? signupResponse.error
+            : [{ message: signupResponse.error || "Something went wrong" }]
+        );
       }
-    } catch (error: any) {
-      console.error("Signup failed", error);
-      setError(["An unexpected error occurred"]);
+    } catch (error) {
+      console.error("Signup error:", error);
+      setErrors([
+        {
+          message: `An unexpected error occurred: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -70,13 +77,13 @@ export function SignupForm({
                     Create an account to get started
                   </p>
                 </div>
-                {error?.length > 0 && (
+                {errors.length > 0 && (
                   <Alert variant="destructive">
                     <AlertDescription>
                       <ul className="list-disc px-4">
-                        {error.map((errorMessage) => (
-                          <li className="list-disc" key={errorMessage}>
-                            {errorMessage}
+                        {errors.map((err, index) => (
+                          <li className="list-disc" key={index}>
+                            {err.message}
                           </li>
                         ))}
                       </ul>
@@ -141,12 +148,14 @@ export function SignupForm({
               </div>
             </form>
             <div className="relative hidden bg-muted md:block">
-              <img
+              <Image
                 src="/auth-background.png"
                 alt="Mail Organizer"
-                className="absolute inset-0 h-full w-full object-cover"
+                fill
+                className="object-cover"
+                priority
               />
-              <div className="absolute inset-0  from-background to-background/60" />
+              <div className="absolute inset-0 from-background to-background/60" />
             </div>
           </CardContent>
         </Card>

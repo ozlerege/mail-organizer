@@ -41,28 +41,21 @@ export async function POST(req: Request) {
 
     // Create user
     const user = await prisma.user.create({
-      //@ts-ignore
       data: {
         username,
         password: hashedPassword,
+        // @ts-expect-error: Will be fixed in the future
+        email: `${username}@example.com`,
       },
       select: {
         id: true,
         username: true,
-        createdAt: true,
       },
     });
 
     return NextResponse.json(
-      {
-        message: "User created successfully",
-        user: {
-          id: user.id,
-          username: user.username,
-          createdAt: user.createdAt,
-        },
-      },
-      { status: 201 }
+      { message: "User created successfully", user },
+      { status: 200 }
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -75,6 +68,7 @@ export async function POST(req: Request) {
       );
     }
 
+    console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -5,16 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface Mail {
-  id: string;
-  name?: string;
-  subject: string;
-  text: string;
-  date: Date;
-  read?: boolean;
-  labels?: string[];
-}
+import { Mail } from "@/types/mail";
 
 interface MailListProps {
   items: Mail[];
@@ -37,15 +28,13 @@ export function MailList({ items, onEmailClick }: MailListProps) {
             <div className="flex w-full flex-col gap-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="font-semibold">{item.name || "Unknown"}</div>
+                  <div className="font-semibold">{item.name}</div>
                   {!item.read && (
                     <span className="flex h-2 w-2 rounded-full bg-blue-600" />
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {item.date
-                    ? formatDistanceToNow(item.date, { addSuffix: true })
-                    : ""}
+                  {formatDistanceToNow(item.date, { addSuffix: true })}
                 </div>
               </div>
               <div className="text-sm font-medium">{item.subject}</div>
@@ -55,7 +44,7 @@ export function MailList({ items, onEmailClick }: MailListProps) {
             </div>
             {item.labels?.length ? (
               <div className="flex items-center gap-2">
-                {item.labels.map((label: string) => (
+                {item.labels.map((label) => (
                   <Badge key={label} variant={getBadgeVariantFromLabel(label)}>
                     {label}
                   </Badge>
