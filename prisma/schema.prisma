@@ -1,0 +1,113 @@
+// This is your Prisma schema file
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User model to store application users
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  emailAccounts EmailAccount[]
+  folders       Folder[]
+  labels        Label[]
+  contacts      Contact[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// Email Account model to store connected email accounts (Gmail/Outlook)
+model EmailAccount {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      EmailProvider
+  email         String
+  accessToken   String
+  refreshToken  String?
+  expiresAt     DateTime?
+  emails        Email[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([userId, email])
+}
+
+// Email model to store emails from all accounts
+model Email {
+  id              String       @id @default(cuid())
+  emailAccountId  String
+  emailAccount    EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
+  externalId      String       // Original email ID from Gmail/Outlook
+  subject         String
+  body           String        @db.Text
+  sender         String
+  recipients     String[]
+  cc             String[]
+  bcc            String[]
+  isRead         Boolean       @default(false)
+  isImportant    Boolean       @default(false)
+  receivedAt     DateTime
+  folders        Folder[]
+  labels         Label[]
+  contacts       Contact[]
+  parentEmail    Email?        @relation("EmailThread", fields: [parentEmailId], references: [id])
+  parentEmailId  String?
+  replies        Email[]       @relation("EmailThread")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([emailAccountId, externalId])
+}
+
+// Folder model for organizing emails
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails    Email[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
+// Label model for categorizing emails
+model Label {
+  id        String   @id @default(cuid())
+  name      String
+  color     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails    Email[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
+// Contact model for managing contacts
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails    Email[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, email])
+}
+
+enum EmailProvider {
+  GMAIL
+  OUTLOOK
+} 
