@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 export function SignupForm({
   className,
   ...props
@@ -40,15 +40,6 @@ export function SignupForm({
           },
           body: JSON.stringify(signupInput),
         });
-
-        if (loginResponse.ok) {
-          router.push("/dashboard");
-        } else {
-          setError([
-            "Account created but login failed. Please try logging in.",
-          ]);
-          router.push("/login");
-        }
       } else {
         if (signupData.error === "Validation error" && signupData.details) {
           setError(signupData.details.map((detail: any) => detail.message));
@@ -66,18 +57,6 @@ export function SignupForm({
 
   return (
     <>
-      {loading && (
-        <div className="flex justify-center items-center h-screen">
-          <Alert>
-            <AlertTitle>Please wait...</AlertTitle>
-            <AlertDescription>
-              <p className="text-balance text-muted-foreground">
-                Creating your account...
-              </p>
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
       <div className={cn("flex flex-col gap-6", className)} {...props}>
         <Card className="overflow-hidden">
           <CardContent className="grid p-0 md:grid-cols-2">
@@ -87,8 +66,11 @@ export function SignupForm({
                   <h1 className="text-2xl font-bold">
                     Welcome to Mail Organizer
                   </h1>
+                  <p className="text-balance text-muted-foreground">
+                    Create an account to get started
+                  </p>
                 </div>
-                {error && (
+                {error?.length > 0 && (
                   <Alert variant="destructive">
                     <AlertDescription>
                       <ul className="list-disc px-4">
@@ -135,8 +117,13 @@ export function SignupForm({
                     }
                   />
                 </div>
-                <Button type="button" onClick={handleSignup} className="w-full">
-                  Sign up
+                <Button
+                  type="button"
+                  onClick={handleSignup}
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Signing up..." : "Sign up"}
                 </Button>
 
                 <div className="text-center text-sm">
@@ -155,10 +142,11 @@ export function SignupForm({
             </form>
             <div className="relative hidden bg-muted md:block">
               <img
-                src="/placeholder.svg"
-                alt="Image"
-                className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+                src="/auth-background.png"
+                alt="Mail Organizer"
+                className="absolute inset-0 h-full w-full object-cover"
               />
+              <div className="absolute inset-0  from-background to-background/60" />
             </div>
           </CardContent>
         </Card>

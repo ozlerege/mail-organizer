@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { compare } from "bcrypt";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { sign } from "jsonwebtoken";
+import * as jose from "jose";
 
 // Validation schema for login request
 const loginSchema = z.object({
@@ -45,16 +45,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // Create JWT token using jose
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const token = await new jose.SignJWT({
+      userId: user.id,
+      username: user.username,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("30d")
+      .sign(secret);
+
     // Create session
     const session = await prisma.session.create({
       data: {
         userId: user.id,
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        sessionToken: sign(
-          { userId: user.id, username: user.username },
-          process.env.JWT_SECRET as string,
-          { expiresIn: "30d" }
-        ),
+        sessionToken: token,
       },
     });
 
@@ -65,7 +72,6 @@ export async function POST(req: Request) {
           id: user.id,
           username: user.username,
         },
-        sessionToken: session.sessionToken,
       },
       {
         status: 200,
@@ -87,6 +93,7 @@ export async function POST(req: Request) {
       );
     }
 
+    console.error("Login error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -16,6 +16,47 @@ export function LoginForm({
     username: "",
     password: "",
   });
+  const [error, setError] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const handleLogin = async () => {
+    setLoading(true);
+    setError([]);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(loginInput),
+      });
+
+      const loginData = await response.json();
+      if (response.status == 200) {
+        try {
+          // Store user data in localStorage
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              id: loginData.user.id,
+              username: loginData.user.username,
+            })
+          );
+          // Redirect to dashboard after successful login
+          router.push("/dashboard");
+        } catch (storageError) {
+          console.error("Error storing session data:", storageError);
+          setError(["Failed to store session data"]);
+        }
+      } else {
+        setError([loginData.error || "Something went wrong"]);
+      }
+    } catch (error) {
+      setError(["An unexpected error occurred"]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden">
@@ -64,8 +105,13 @@ export function LoginForm({
                   }
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Login
+              <Button
+                type="button"
+                onClick={handleLogin}
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? "Logging in..." : "Login"}
               </Button>
 
               <div className="text-center text-sm">
@@ -84,10 +130,11 @@ export function LoginForm({
           </form>
           <div className="relative hidden bg-muted md:block">
             <img
-              src="/placeholder.svg"
-              alt="Image"
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+              src="/auth-background.png"
+              alt="Mail Organizer"
+              className="absolute inset-0 h-full w-full object-cover"
             />
+            <div className="absolute inset-0  from-background to-background/60" />
           </div>
         </CardContent>
       </Card>
